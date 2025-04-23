@@ -1,12 +1,12 @@
 <template>
-    <div class="contenedor-externo">
-      <div v-if="rolJugador" class="rol-texto">
+    <div class="contenedor-externo mini">
+      <div v-if="rolJugador" class="rol-texto mini-texto">
         {{ rolJugador === 'presidente' ? 'Presidente' : 'Canciller' }}
       </div>
-      <div class="contenedor-imagen">
+      <div class="contenedor-imagen mini-imagen">
         <img src="/image.png" alt="Imagen" />
       </div>
-      <div class="nombre-jugador">{{ nombreJugador }}</div>
+      <div class="nombre-jugador mini-texto">{{ nombreJugador }}</div>
     </div>
   </template>
   
@@ -68,42 +68,32 @@
   </script>
   
   <style scoped>
-  .contenedor-externo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .rol-texto {
-    margin-bottom: 4px;
-    font-weight: bold;
-    color: #8b5cf6;
-    text-transform: uppercase;
-    font-size: 14px;
-  }
-  
-  .contenedor-imagen {
-    width: 150px;
-    height: 150px;
-    border: 1px solid #ccc;
-    padding: 8px;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .contenedor-imagen img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  
-  .nombre-jugador {
-    margin-top: 6px;
-    font-size: 14px;
-    color: #333;
-  }
-  </style>
+.contenedor-externo.mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  margin: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100px;
+  background-color: #f8f9fa;
+}
+
+.rol-texto.mini-texto,
+.nombre-jugador.mini-texto {
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 4px 0;
+  font-weight: 500;
+}
+
+.contenedor-imagen.mini-imagen img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+</style>
   

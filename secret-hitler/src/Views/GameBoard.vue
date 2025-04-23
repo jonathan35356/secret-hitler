@@ -1,11 +1,27 @@
 <template>
-    <div class="container text-center mt-4 game-container">
+    <div class="container-fluid text-center mt-4 game-container" style="max-width: 1400px; margin: 0 auto;">
       <!-- Área de notificaciones -->
       <div v-if="notification.message" 
            :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger']">
         {{ notification.message }}
       </div>
-  
+<!-- Contenedor de Jugadores -->
+<div class="players-container mb-4">
+  <div class="d-flex justify-content-center overflow-auto" style="gap: 8px;">
+    <PlayerContainer
+      v-for="n in 10"
+      :key="n"
+      class="flex-shrink-0"
+    />
+  </div>
+</div>
+
+<!-- Contenedor de Mazos -->
+<div class="decks-container mb-4">
+  <div class="d-flex justify-content-center">
+    <DecksEndTermButton class="mx-3" />
+  </div>
+</div>
       <!-- Tablero Fascista -->
       <div class="mb-4">
         <div class="d-flex justify-content-center">
@@ -89,6 +105,8 @@
   import { ref, computed, onMounted } from 'vue'
   import FascistCard from '../components/FascistCard.vue'
   import LiberalCard from '../components/LiberalCard.vue'
+  import PlayerContainer from '../components/PlayerContainer.vue'
+import DecksEndTermButton from '../components/DecksEndTermButton.vue'
   
   // Configuración inicial
   const numPlayers = ref(6)
@@ -286,4 +304,17 @@
     margin: 0 auto 1rem;
     max-width: 80%;
   }
+
+  .players-container, .decks-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.player-card, .deck-card {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+}
   </style>

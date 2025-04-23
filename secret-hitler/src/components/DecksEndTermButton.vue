@@ -1,11 +1,19 @@
 <template>
-    <div class="contenedor-principal">
-      <div class="mazo">
+    <div class="d-flex align-items-center justify-content-center gap-4 mt-3">
+      <div class="mazo text-center px-3 py-2 border rounded">
         Mazo<br />
         {{ mazoPartida.length }} cartas
       </div>
-      <button class="boton-central" @click="accionDelBoton">Finalizar Presidencia</button>
-      <div class="mazo">
+  
+      <button
+        class="btn btn-sm btn-primary"
+        @click="accionDelBoton"
+        style="padding: 4px 10px; font-size: 0.9rem;"
+      >
+        Finalizar Presidencia
+      </button>
+  
+      <div class="mazo text-center px-3 py-2 border rounded">
         Descarte<br />
         {{ mazoDescarte.length }} cartas
       </div>
