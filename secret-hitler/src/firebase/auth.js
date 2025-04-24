@@ -1,4 +1,4 @@
-import { auth, db } from './config' //llamamos la autentificacion y la base de datos
+import { auth, db } from './firebase.js' //llamamos la autentificacion y la base de datos
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, browserLocalPersistence,setPersistence, updateProfile  } from 'firebase/auth'//trae las funciones propias de firebase
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 

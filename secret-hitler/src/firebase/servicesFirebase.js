@@ -1,4 +1,4 @@
-import { db } from "./config.js";
+import { db } from "./firebase.js";
 import {
   collection,
   addDoc,
@@ -467,3 +467,25 @@ export const deleteQuerySubcolletionBatch = async (nombreColeccion, idDocumento,
     console.error("Error al eliminar en la subcolección con WriteBatch:", error);
   }
 };
+
+export const deleteDocumentFromSubcollection = async (
+  nombreColeccion,       // Ej: "partidas"
+  idDocumentoPrincipal,  // Ej: "ID_partida"
+  nombreSubcoleccion,    // Ej: "jugadores"
+  idSubdocumento         // Ej: "ID_jugador"
+) => {
+  try {
+    const docRef = doc(
+      db,
+      nombreColeccion,
+      idDocumentoPrincipal,
+      nombreSubcoleccion,
+      idSubdocumento
+    );
+    await deleteDoc(docRef);
+    console.log(`✔ Documento eliminado de ${nombreSubcoleccion}: ${idSubdocumento}`);
+  } catch (e) {
+    console.error(`✘ Error al eliminar:`, e);
+    throw e; // Recomendado para manejar el error donde se llame a la función
+  }
+}; // <--- Único cierre necesario (cierra la función)
