@@ -1,7 +1,7 @@
 <template>
     <div class="login-container d-flex justify-content-center align-items-center min-vh-100">
       <div class="card card-login w-100" style="max-width: 600px;">
-        <Logo alt="logo-uno" class="w-25 d-block mx-auto"/>
+        
         <div class="login-card p-5 shadow-sm rounded-3 bg-white">
           <h1 class="text-center mb-4 fw-bold">Iniciar Sesión</h1>
           <form @submit.prevent="handleLogin">

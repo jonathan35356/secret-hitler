@@ -1,4 +1,3 @@
-
 <template>
   <div class="d-flex justify-content-center align-items-center min-vh-100">
     <div class="card card-join">

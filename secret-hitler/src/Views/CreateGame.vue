@@ -31,7 +31,8 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { AuthService } from '../firebase/auth.js';
-import { createDocument, readDocumentById, updateDocument, createSubCollection, onSnapshotDocument, onSnapshotSubcollectionWithFullData, readCollection } from "../firebase/servicesFirebase.js"
+import { createDocument, readDocumentById, updateDocument, createSubCollection, onSnapshotDocument, onSnapshotSubcollectionWithFullData, readCollection, createGame } from "../firebase/servicesFirebase.js";
+import { initializePolicies } from "../firebase/initializePolicies";
 import Swal from "sweetalert2";
 
 export default {
@@ -40,6 +41,7 @@ export default {
     const participantes = ref([]);
     const estado = ref("esperando");
     const router = useRouter();
+    let uid = ""; // Declarar uid en el alcance del componente
 
     const generarCodigo = () => {
       const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -55,16 +57,17 @@ export default {
     let unsubscribeSubcoleccion = null;
     onMounted(async () => {
       const user = await AuthService.getCurrentUser();
-      console.log(user)
+      console.log(user);
       if (!user) {
         Swal.fire("Error", "Debes iniciar sesión para crear una partida.", "error");
         return;
       }
 
-      const { displayName, uid } = user;
-      console.log(displayName, uid)
-      let nuevoCodigo
-      let partidaSnap
+      const { displayName, uid: userUid } = user; // Obtener uid del usuario autenticado
+      uid = userUid; // Asignar uid al alcance del componente
+      console.log(displayName, uid);
+      let nuevoCodigo;
+      let partidaSnap;
 
       try {
         // Verifica y genera un código único
@@ -74,32 +77,41 @@ export default {
         } while (partidaSnap); // Repetir mientras el código ya exista
 
         // Crea la nueva partida
-        await createDocument("partidas", {
-          codigo: nuevoCodigo,
-          estado: "esperando",
-          turnoActual: uid, // Revisar si este o el jugadores_partida
-          cartaActual: "inicio",
-          colorActual: "ninguno",
-          cartaAcumulada: null,
-          ordenInverso: false
-        }, nuevoCodigo);
+        await createDocument(
+          "partidas",
+          {
+            codigo: nuevoCodigo,
+            estado: "esperando",
+            turnoActual: uid, // Revisar si este o el jugadores_partida
+            cartaActual: "inicio",
+            colorActual: "ninguno",
+            cartaAcumulada: null,
+            ordenInverso: false,
+          },
+          nuevoCodigo
+        );
 
-        //Añadir el jugador a "jugadores_partida"
+        // Añadir el jugador a "jugadores_partida"
         await createSubCollection("partidas", nuevoCodigo, "jugadores_partida", {
           idJugador: uid,
           idPartida: nuevoCodigo,
           host: true,
-          estadoUno: false
-        })
+          estadoUno: false,
+        });
 
         // Asignar valores locales
         codigo.value = nuevoCodigo;
         estado.value = "No iniciada";
 
         // Escuchar cambios en la subcolección "jugadores_partida"
-        unsubscribeSubcoleccion = await onSnapshotSubcollectionWithFullData ("partidas", codigo.value, "jugadores_partida", (querySnapshot) => {
-          participantes.value  = querySnapshot
-        });
+        unsubscribeSubcoleccion = await onSnapshotSubcollectionWithFullData(
+          "partidas",
+          codigo.value,
+          "jugadores_partida",
+          (querySnapshot) => {
+            participantes.value = querySnapshot;
+          }
+        );
 
         // Escuchar cambios en la partida
         unsubscribeDocumento = await onSnapshotDocument("partidas", codigo.value, (docSnap) => {
@@ -109,100 +121,51 @@ export default {
             }
           }
         });
-
       } catch (error) {
         console.error("Error al crear la partida:", error);
         Swal.fire("Error", "No se pudo crear la partida. Inténtalo de nuevo.", "error");
       }
     });
 
-    const asignarCartasAJugadores = async (codigoPartida, jugadores) => {
-      try {
-        // Obtén todas las cartas de la colección "Cartas"
-        const cartasTotalesSnap = await readCollection("cartas"); // Suponiendo que tienes un documento que contiene todas las cartas
-        let cartasDisponibles = cartasTotalesSnap
-
-        if (!cartasDisponibles || cartasDisponibles.length === 0) {
-          throw new Error("No hay cartas disponibles en la colección 'Cartas'.");
-        }
-
-        for (let jugador of jugadores) {
-          const cartasJugador = [];
-
-          for (let i = 0; i < 7; i++) {
-            const indiceAleatorio = Math.floor(Math.random() * cartasDisponibles.length);
-            const cartaSeleccionada = cartasDisponibles[indiceAleatorio];
-
-            cartasJugador.push(cartaSeleccionada);
-
-            // Crea el registro en la subcolección "cartas_partida"
-            await createSubCollection("partidas", codigoPartida, "cartas_partida", {
-              idJugador: jugador.idJugador,
-              idPartida: codigoPartida,
-              idCarta: cartaSeleccionada.id,
-              place: "mano"
-            }, cartaSeleccionada.id);
-
-            // Elimina la carta asignada del conjunto disponible
-            cartasDisponibles.splice(indiceAleatorio, 1);
-          }
-
-          // console.log(`Cartas asignadas al jugador ${jugador.nombre}:`, cartasJugador);
-        }
-
-        console.log("Asignación de cartas completada.");
-      } catch (error) {
-        console.error("Error en la asignación de cartas:", error);
-        throw error;
-      }
-    };
-
-
     const iniciarPartida = async () => {
       try {
-        const confirmar = await Swal.fire({
-          title: "¿Iniciar partida?",
-          text: "Una vez iniciada, no podrás agregar más jugadores.",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Sí, iniciar",
-          cancelButtonText: "Cancelar"
-        });
+        const jugadores = participantes.value.map((jugador, index) => ({
+          id_usuario: jugador.idJugador,
+          id_jugador: jugador.idJugador,
+          nombre: jugador.nombre,
+          rol: index === 0 ? "hitler" : index % 2 === 0 ? "fascista" : "liberal", // Asignar roles
+          orden_turno: index + 1,
+        }));
 
-        if (confirmar.isConfirmed) {
-          // Valida si el número de jugadores es suficiente
-          if (participantes.value.length < 2) {
-            Swal.fire("Mínimo de jugadores no alcanzado", "Necesitas al menos 2 jugadores para iniciar la partida.", "error");
-            return;
-          }
+        // Crear la partida
+        await createGame(codigo.value, uid, jugadores);
 
-          // Asignar las cartas a los jugadores
-          Swal.fire({
-            title: 'Iniciando partida...',
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            }
-          });
+        // Inicializar las políticas
+        await initializePolicies(codigo.value);
 
+        // Actualizar el estado de la partida a "iniciada"
+        await updateDocument("partidas", codigo.value, { estado: "iniciada" });
 
-          await asignarCartasAJugadores(codigo.value, participantes.value);
+        // Redirigir al tablero de juego
+        router.push({ name: 'GameBoard', params: { codigoSala: codigo.value } });
 
-          // Actualizar el estado a "iniciada"
-          await updateDocument("partidas", codigo.value, { estado: "iniciada" });
-
-          // Una vez todo listo, mostramos éxito
-          await Swal.fire("¡Partida iniciada!", "", "success");
-
-        }
+        Swal.fire("¡Partida iniciada!", "La partida ha comenzado correctamente.", "success");
       } catch (error) {
         console.error("Error al iniciar la partida:", error);
         Swal.fire("Error", "No se pudo iniciar la partida.", "error");
       }
     };
 
-    onUnmounted(() => {
+    const updateTurn = async (turnoActual) => {
+      try {
+        await updateDocument("partidas", props.codigoSala, { turno_actual: turnoActual });
+        console.log("Turno actualizado:", turnoActual);
+      } catch (error) {
+        console.error("Error al actualizar el turno:", error);
+      }
+    };
 
+    onUnmounted(() => {
       if (unsubscribeDocumento) {
         unsubscribeDocumento();
       }
@@ -210,6 +173,7 @@ export default {
         unsubscribeSubcoleccion();
       }
     });
+
     return { codigo, participantes, estado, iniciarPartida };
   },
 };

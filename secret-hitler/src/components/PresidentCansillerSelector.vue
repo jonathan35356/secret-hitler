@@ -19,7 +19,7 @@
 import { ref, computed } from 'vue'
 
   // Desestructuración de los props directamente
-  const { players, presidentId } = defineProps(['players', 'presidentId']);
+  const { players, presidentId, codigoSala } = defineProps(['players', 'presidentId', 'codigoSala']);
   
   // Define el evento de emisión
   const emit = defineEmits(['chancellor-selected']);
@@ -30,9 +30,21 @@ import { ref, computed } from 'vue'
   );
   
   // Función para seleccionar al canciller
-  function selectChancellor(player) {
+  async function selectChancellor(player) {
     emit('chancellor-selected', player);
+    await handleChancellorSelected(player);
   }
+
+  const handleChancellorSelected = async (chancellor) => {
+    try {
+      await updateDocument("partidas", codigoSala, {
+        id_canciller: chancellor.id,
+      });
+      console.log("Canciller seleccionado:", chancellor.nombre);
+    } catch (error) {
+      console.error("Error al seleccionar Canciller:", error);
+    }
+  };
   </script>
   
   <style scoped>
@@ -43,4 +55,3 @@ import { ref, computed } from 'vue'
     box-shadow: 0 0 8px rgba(0,0,0,0.1);
   }
   </style>
-  

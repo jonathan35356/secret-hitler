@@ -1,18 +1,27 @@
 <template>
-  <div class="container-fluid text-center mt-4 game-container" style="max-width: 1400px; margin: 0 auto;">
+  <div
+    class="container-fluid text-center mt-4 game-container"
+    style="max-width: 1400px; margin: 0 auto"
+  >
     <!-- Área de notificaciones -->
-    <div v-if="notification.message" 
-         :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger']">
+    <div
+      v-if="notification.message"
+      :class="[
+        'alert',
+        notification.type === 'success' ? 'alert-success' : 'alert-danger',
+      ]"
+    >
       {{ notification.message }}
     </div>
 
     <!-- Contenedor de Jugadores -->
     <div class="players-container mb-4">
-      <div class="d-flex justify-content-center overflow-auto" style="gap: 8px;">
+      <div class="d-flex justify-content-center overflow-auto" style="gap: 8px">
         <PlayerContainer
-          v-for="n in 10"
-          :key="n"
-          class="flex-shrink-0"
+          v-for="player in players"
+          :key="player.id"
+          :nombre="player.nombre"
+          :rol="player.rol"
         />
       </div>
     </div>
@@ -35,8 +44,8 @@
     <!-- Tablero Fascista -->
     <div class="mb-4">
       <div class="d-flex justify-content-center">
-        <FascistCard 
-          :passedPolicies="fascistProgress" 
+        <FascistCard
+          :passedPolicies="fascistProgress"
           :currentPlayerCount="numPlayers"
           @policy-effect="handleFascistEffect"
         />
@@ -44,14 +53,18 @@
       <div v-if="showFascistPower" class="mt-3">
         <h5>¡Poder Fascista Activado!</h5>
         <p>{{ fascistPowerDescription }}</p>
-        <button v-if="currentPower === 'investigate'" 
-                class="btn btn-warning me-2"
-                @click="showPlayerInvestigation">
+        <button
+          v-if="currentPower === 'investigate'"
+          class="btn btn-warning me-2"
+          @click="showPlayerInvestigation"
+        >
           Investigar Jugador
         </button>
-        <button v-if="currentPower === 'policyPeek'" 
-                class="btn btn-warning me-2"
-                @click="showPolicyPeek">
+        <button
+          v-if="currentPower === 'policyPeek'"
+          class="btn btn-warning me-2"
+          @click="showPolicyPeek"
+        >
           Ver Próximas Políticas
         </button>
       </div>
@@ -60,8 +73,8 @@
     <!-- Tablero Liberal -->
     <div class="mb-4">
       <div class="d-flex justify-content-center">
-        <LiberalCard 
-          :passedPolicies="liberalProgress" 
+        <LiberalCard
+          :passedPolicies="liberalProgress"
           :trackerPosition="electionTracker"
         />
       </div>
@@ -71,14 +84,18 @@
     <div class="game-controls mt-4">
       <div class="mb-3">
         <h4>Acciones Disponibles</h4>
-        <button class="btn btn-primary me-2" 
-                @click="drawPolicies" 
-                :disabled="isGameOver || policiesDeck.length < 3">
-          Robar Políticas ({{ policiesDeck.length }} restantes)
+        <button
+          class="btn btn-primary me-2"
+          @click="drawPolicies"
+          :disabled="isGameOver || politicas.length < 3"
+        >
+          Robar Políticas ({{ politicas.length }} restantes)
         </button>
-        <button v-if="drawnPolicies.length > 0" 
-                class="btn btn-success me-2" 
-                @click="showPolicySelection">
+        <button
+          v-if="drawnPolicies.length > 0"
+          class="btn btn-success me-2"
+          @click="showPolicySelection"
+        >
           Seleccionar Política a Promulgar
         </button>
       </div>
@@ -88,15 +105,37 @@
         <div class="modal-content">
           <h4>Selecciona una política para promulgar</h4>
           <div class="d-flex justify-content-center my-3">
-            <button v-for="(policy, index) in drawnPolicies" 
-                    :key="index"
-                    class="btn policy-card mx-2"
-                    :class="policy === 'fascist' ? 'btn-danger' : 'btn-primary'"
-                    @click="enactPolicy(policy)">
-              {{ policy === 'fascist' ? 'Fascista' : 'Liberal' }}
+            <button
+              v-for="(policy, index) in drawnPolicies"
+              :key="index"
+              class="btn policy-card mx-2"
+              :class="policy.tipo_carta === 'fascista' ? 'btn-danger' : 'btn-primary'"
+              @click="handlePresidentPolicySelection(policy.tipo_carta)"
+            >
+              {{ policy.tipo_carta === "fascista" ? "Fascista" : "Liberal" }}
             </button>
           </div>
-          <button class="btn btn-secondary" @click="showPolicyModal = false">Cancelar</button>
+          <button class="btn btn-secondary" @click="showPolicyModal = false">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Selección de Política por Canciller -->
+      <div v-if="politicasParaCanciller.length > 0" class="policy-modal">
+        <div class="modal-content">
+          <h4>Selecciona una política para promulgar</h4>
+          <div class="d-flex justify-content-center my-3">
+            <button
+              v-for="(policy, index) in politicasParaCanciller"
+              :key="index"
+              class="btn policy-card mx-2"
+              :class="policy.tipo_carta === 'fascista' ? 'btn-danger' : 'btn-primary'"
+              @click="handleChancellorPolicySelection(policy.tipo_carta)"
+            >
+              {{ policy.tipo_carta === "fascista" ? "Fascista" : "Liberal" }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -104,186 +143,368 @@
     <!-- Estado del Juego -->
     <div v-if="isGameOver" class="game-over mt-4">
       <h2 :class="gameResult === 'liberal' ? 'text-primary' : 'text-danger'">
-        {{ gameResult === 'liberal' ? '¡Los Liberales han ganado!' : '¡Los Fascistas han ganado!' }}
+        {{
+          gameResult === "liberal"
+            ? "¡Los Liberales han ganado!"
+            : "¡Los Fascistas han ganado!"
+        }}
       </h2>
       <button class="btn btn-info mt-3" @click="resetGame">Nueva Partida</button>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import PresidentCansillerSelector from '../components/PresidentCansillerSelector.vue'
-import FascistCard from '../components/FascistCard.vue'
-import LiberalCard from '../components/LiberalCard.vue'
-import PlayerContainer from '../components/PlayerContainer.vue'
-import DecksEndTermButton from '../components/DecksEndTermButton.vue'
+<script>
+import { ref, onMounted, computed } from "vue";
+import PlayerContainer from "../components/PlayerContainer.vue";
+import DecksEndTermButton from "../components/DecksEndTermButton.vue";
+import PresidentCansillerSelector from "../components/PresidentCansillerSelector.vue";
+import FascistCard from "../components/FascistCard.vue";
+import LiberalCard from "../components/LiberalCard.vue";
+import { onSnapshotSubcollection, updateDocument, createSubCollection, enrichDataWithField, readSubcollection, readDocumentById, onSnapshotDocument, updateSubcollectionDocument } from "../firebase/servicesFirebase"; // Importación de función para escuchar cambios
 
-// Configuración inicial
-const numPlayers = ref(6)
-const fascistTrackLength = computed(() => numPlayers.value <= 6 ? 6 : numPlayers.value <= 8 ? 5 : 6)
+export default {
+  props: ["codigoSala"],
+  components: {
+    PlayerContainer,
+    DecksEndTermButton,
+    PresidentCansillerSelector,
+    FascistCard,
+    LiberalCard,
+  },
+  setup(props) {
+    const notification = ref({ message: "", type: "" });
+    const players = ref([]); // Lista de jugadores
+    const showChancellorSelector = ref(false);
+    const fascistProgress = ref(0);
+    const liberalProgress = ref(0);
+    const electionTracker = ref(0);
+    const isGameOver = ref(false);
+    const drawnPolicies = ref([]);
+    const showPolicyModal = ref(false);
+    const politicasParaCanciller = ref([]);
+    const currentPresident = ref(null); // Presidente actual
+    const currentChancellor = ref(null); // Canciller actual
+    const numPlayers = computed(() => players.value.length); // Número de jugadores
+    const showFascistPower = ref(false); // Mostrar poderes fascistas
 
+    // Escuchar jugadores en tiempo real y sincronizar estado local con Firebase
+    onMounted(async () => {
+      const unsubscribePlayers = onSnapshotSubcollection(
+        "partidas",
+        props.codigoSala,
+        "jugadores",
+        async (jugadores) => {
+          // Enriquecer los datos de los jugadores con sus nombres y roles
+          players.value = await enrichDataWithField(jugadores, "jugadores", "id_usuario", "nombre");
+        }
+      );
 
-const handleFascistEffect = (effect) => {
-  console.log("Efecto fascista recibido:", effect)
-}
+      try {
+        // Recuperar datos de la partida
+        const partida = await readDocumentById("partidas", props.codigoSala);
+        if (partida) {
+          // Sincronizar el estado local con Firebase
+          fascistProgress.value = partida.fascistProgress || 0;
+          liberalProgress.value = partida.liberalProgress || 0;
+          electionTracker.value = partida.electionTracker || 0;
+          currentPresident.value = players.value.find(player => player.id === partida.id_presidente) || null;
+          currentChancellor.value = players.value.find(player => player.id === partida.id_canciller) || null;
+          politicas.value = partida.politicas_restantes || [];
+          drawnPolicies.value = partida.politicas_robadas || [];
+        }
 
-// Estado del juego
-const fascistProgress = ref(0)
-const liberalProgress = ref(0)
-const electionTracker = ref(0)
-const policiesDeck = ref([])
-const drawnPolicies = ref([])
-const discardedPolicies = ref([])
-const showPolicyModal = ref(false)
-const notification = ref({ message: '', type: '' })
-const currentPower = ref(null)
-const showFascistPower = ref(false)
-const isGameOver = ref(false)
-const gameResult = ref(null)
+        // Escuchar cambios en los jugadores
+        const unsubscribePlayers = onSnapshotSubcollection(
+          "partidas",
+          props.codigoSala,
+          "jugadores",
+          (jugadores) => {
+            players.value = jugadores;
+          }
+        );
 
-// Inicializar el mazo de políticas
-const initializeDeck = () => {
-  const fascistCards = Array(11).fill('fascist')
-  const liberalCards = Array(6).fill('liberal')
-  policiesDeck.value = [...fascistCards, ...liberalCards]
-  shuffleDeck(policiesDeck.value) // <- pasa el mazo como argumento
-}
+        // Escuchar cambios en la partida
+        const unsubscribeGame = onSnapshotDocument("partidas", props.codigoSala, (partida) => {
+          if (partida) {
+            fascistProgress.value = partida.fascistProgress || 0;
+            liberalProgress.value = partida.liberalProgress || 0;
+            electionTracker.value = partida.electionTracker || 0;
+            currentPresident.value = players.value.find(player => player.id === partida.id_presidente) || null;
+            currentChancellor.value = players.value.find(player => player.id === partida.id_canciller) || null;
+            politicas.value = partida.politicas_restantes || [];
+            drawnPolicies.value = partida.politicas_robadas || [];
+          }
+        });
 
-const showChancellorSelector = ref(true)
-const players = ref([
-  { id: 'u1', name: 'Jugador 1', isDead: false },
-  { id: 'u2', name: 'Jugador 2', isDead: false },
-  { id: 'u3', name: 'Jugador 3', isDead: false },
-])
+        const jugadores = await readSubcollection("partidas", props.codigoSala, "jugadores");
+        console.log(jugadores);
 
-const currentPresident = ref({ id: 'u1' })
+        return () => {
+          unsubscribePlayers(); // Cancelar la suscripción al desmontar
+          unsubscribeGame(); // Cancelar la suscripción al desmontar
+        };
+      } catch (error) {
+        console.error("Error al recuperar el estado del juego:", error);
+      }
+    });
 
-const selectedChancellor = ref(null)
+    const politicas = ref([
+      { tipo_carta: "liberal" },
+      { tipo_carta: "fascista" },
+      { tipo_carta: "liberal" },
+    ]);
 
-function handleChancellorSelected(chancellor) {
-  selectedChancellor.value = chancellor
-  showChancellorSelector.value = false
-  console.log(`Canciller seleccionado: ${chancellor.name}`)
-}
+    const handleFascistEffect = () => {
+      console.log("Efecto fascista activado");
+    };
 
-// Barajar el mazo
-function shuffleDeck(deck) {
-  for (let i = deck.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1))
-    ;[deck[i], deck[j]] = [deck[j], deck[i]]
-  }
-}
+    const drawPolicies = async () => {
+      if (politicas.value.length < 3) {
+        console.error("No hay suficientes cartas en el mazo.");
+        return;
+      }
 
-// Robar políticas
-const drawPolicies = () => {
-  if (policiesDeck.value.length < 3) {
-    policiesDeck.value = [...discardedPolicies.value]
-    discardedPolicies.value = []
-    shuffleDeck()
-    showNotification('¡El mazo se ha rebarajado con las políticas descartadas!', 'success')
-  }
-  drawnPolicies.value = policiesDeck.value.splice(0, 3)
-  showNotification('Se han robado 3 políticas. Selecciona una para promulgar.', 'success')
-}
+      drawnPolicies.value = politicas.value.slice(0, 3);
+      politicas.value = politicas.value.slice(3);
 
-// Mostrar selección de política
-const showPolicySelection = () => {
-  showPolicyModal.value = true
-}
+      await updateDocument("partidas", props.codigoSala, {
+        politicas_robadas: drawnPolicies.value,
+        politicas_restantes: politicas.value,
+      });
 
-// Promulgar política
-const enactPolicy = (policyType) => {
-  showPolicyModal.value = false
-  const remainingPolicies = drawnPolicies.value.filter(p => p !== policyType)
-  discardedPolicies.value.push(...remainingPolicies)
-  drawnPolicies.value = []
-  
-  if (policyType === 'fascist') {
-    fascistProgress.value++
-    checkFascistPower()
-  } else {
-    liberalProgress.value++
-  }
-  
-  electionTracker.value = (electionTracker.value + 1) % 3
-  showNotification(`¡Se ha promulgado una política ${policyType === 'fascist' ? 'fascista' : 'liberal'}!`, 
-                   policyType === 'fascist' ? 'danger' : 'success')
+      showPolicyModal.value = true; // Mostrar el modal de selección
+    };
 
-  checkWinConditions()
-}
+    const enactPolicy = async (policyType) => {
+      try {
+        if (policyType === "fascista") {
+          fascistProgress.value += 1;
+        } else if (policyType === "liberal") {
+          liberalProgress.value += 1;
+        }
 
-// Efectos especiales del track fascista
-const checkFascistPower = () => {
-  currentPower.value = null
-  showFascistPower.value = false
+        await updateDocument("partidas", props.codigoSala, {
+          fascistProgress: fascistProgress.value,
+          liberalProgress: liberalProgress.value,
+        });
 
-  if (numPlayers.value >= 7 && fascistProgress.value === 1) {
-    currentPower.value = 'investigate'
-    showFascistPower.value = true
-  } else if (numPlayers.value >= 7 && fascistProgress.value === 2) {
-    currentPower.value = 'policyPeek'
-    showFascistPower.value = true
-  } else if (fascistProgress.value === 3) {
-    currentPower.value = 'election'
-    showFascistPower.value = true
-  }
-}
+        await checkGameOver();
+      } catch (error) {
+        console.error("Error al promulgar política:", error);
+      }
+    };
 
-// Descripción de poderes fascistas
-const fascistPowerDescription = computed(() => {
-  switch(currentPower.value) {
-    case 'investigate': return 'El presidente puede investigar la afiliación de otro jugador'
-    case 'policyPeek': return 'El presidente puede ver las próximas 3 políticas en el mazo'
-    case 'election': return 'El próximo presidente será elegido por el líder fascista'
-    default: return ''
-  }
-})
+    const checkGameOver = async () => {
+      if (fascistProgress.value >= 6) {
+        isGameOver.value = true;
+        await updateDocument("partidas", props.codigoSala, {
+          estado: "finalizada",
+          ganador: "fascistas",
+        });
+        notification.value = { message: "¡Los Fascistas han ganado!", type: "danger" };
+      } else if (liberalProgress.value >= 5) {
+        isGameOver.value = true;
+        await updateDocument("partidas", props.codigoSala, {
+          estado: "finalizada",
+          ganador: "liberales",
+        });
+        notification.value = { message: "¡Los Liberales han ganado!", type: "success" };
+      }
+    };
 
-// Verificar condiciones de victoria
-const checkWinConditions = () => {
-  if (liberalProgress.value >= 5) {
-    endGame('liberal')
-  } else if (fascistProgress.value >= 6) {
-    endGame('fascist')
-  } else if (fascistProgress.value >= 3 && currentPower.value === 'election') {
-    endGame('fascist')
-  }
-}
+    const resetGame = async () => {
+      try {
+        await updateDocument("partidas", props.codigoSala, {
+          estado: "pendiente",
+          fascistProgress: 0,
+          liberalProgress: 0,
+          turno_actual: 0,
+          ganador: null,
+        });
+        fascistProgress.value = 0;
+        liberalProgress.value = 0;
+        isGameOver.value = false;
+        notification.value = { message: "La partida ha sido reiniciada.", type: "info" };
+      } catch (error) {
+        console.error("Error al reiniciar la partida:", error);
+      }
+    };
 
-// Finalizar el juego
-const endGame = (result) => {
-  isGameOver.value = true
-  gameResult.value = result
-  showNotification(`¡Juego terminado! Los ${result === 'liberal' ? 'liberales' : 'fascistas'} han ganado.`, 
-                   result === 'liberal' ? 'success' : 'danger')
-}
+    const handleChancellorSelected = async (chancellor) => {
+      try {
+        await updateDocument("partidas", props.codigoSala, {
+          id_canciller: chancellor.id,
+        });
 
-// Mostrar notificación
-const showNotification = (message, type) => {
-  notification.value = { message, type }
-  setTimeout(() => { notification.value = { message: '', type: '' } }, 3000)
-}
+        currentChancellor.value = chancellor;
 
-// Reiniciar juego
-const resetGame = () => {
-  fascistProgress.value = 0
-  liberalProgress.value = 0
-  electionTracker.value = 0
-  drawnPolicies.value = []
-  discardedPolicies.value = []
-  isGameOver.value = false
-  gameResult.value = null
-  currentPower.value = null
-  showFascistPower.value = false
-  initializeDeck()
-  showNotification('¡Nueva partida iniciada!', 'success')
-}
+        // Asignar rol al Canciller
+        players.value = players.value.map((player) =>
+          player.id === chancellor.id ? { ...player, rol: "canciller" } : player
+        );
 
-// Inicializar el juego al cargar
-onMounted(() => {
-  initializeDeck()
-})
+        showChancellorSelector.value = false; // Ocultar el selector de Canciller
+        notification.value = { message: `¡${chancellor.nombre} ha sido nominado como Canciller!`, type: "info" };
+      } catch (error) {
+        console.error("Error al seleccionar Canciller:", error);
+      }
+    };
+
+    const handlePresidentPolicySelection = async (selectedPolicy) => {
+      try {
+        const remainingPolicies = drawnPolicies.value.filter(policy => policy.tipo_carta !== selectedPolicy);
+
+        await updateDocument("partidas", props.codigoSala, {
+          politicas_para_canciller: remainingPolicies,
+        });
+
+        politicasParaCanciller.value = remainingPolicies;
+        notification.value = { message: "El Canciller debe seleccionar una política.", type: "info" };
+        showPolicyModal.value = false;
+      } catch (error) {
+        console.error("Error al seleccionar política del presidente:", error);
+      }
+    };
+
+    const handleChancellorPolicySelection = async (selectedPolicy) => {
+      try {
+        if (selectedPolicy === "fascista") {
+          fascistProgress.value += 1;
+        } else if (selectedPolicy === "liberal") {
+          liberalProgress.value += 1;
+        }
+
+        await updateDocument("partidas", props.codigoSala, {
+          fascistProgress: fascistProgress.value,
+          liberalProgress: liberalProgress.value,
+        });
+
+        await checkGameOver();
+
+        politicasParaCanciller.value = [];
+        notification.value = { message: `¡Se ha promulgado una política ${selectedPolicy}!`, type: "success" };
+      } catch (error) {
+        console.error("Error al seleccionar política del Canciller:", error);
+      }
+    };
+
+    const selectRandomPresident = async () => {
+      try {
+        const randomIndex = Math.floor(Math.random() * players.value.length);
+        const selectedPresident = players.value[randomIndex];
+
+        // Actualizar Firebase con el presidente seleccionado
+        await updateDocument("partidas", props.codigoSala, {
+          id_presidente: selectedPresident.id,
+        });
+
+        currentPresident.value = selectedPresident;
+        notification.value = { message: `¡${selectedPresident.nombre} es el Presidente!`, type: "info" };
+
+        // Asignar rol al presidente
+        players.value = players.value.map((player) =>
+          player.id === selectedPresident.id ? { ...player, rol: "presidente" } : player
+        );
+      } catch (error) {
+        console.error("Error al seleccionar presidente:", error);
+      }
+    };
+
+    const handleVote = async (playerId, vote) => {
+      try {
+        // Guardar el voto en Firebase
+        await createSubCollection("partidas", props.codigoSala, "votaciones", {
+          id_jugador: playerId,
+          voto: vote,
+        });
+
+        // Escuchar los votos en tiempo real
+        const unsubscribe = onSnapshotSubcollection(
+          "partidas",
+          props.codigoSala,
+          "votaciones",
+          (votos) => {
+            const totalVotes = votos.length;
+            const yesVotes = votos.filter((v) => v.voto === "ja").length;
+
+            if (totalVotes === players.value.length - 1) {
+              // Todos los jugadores han votado
+              if (yesVotes > Math.floor(players.value.length / 2)) {
+                notification.value = { message: "¡El Canciller ha sido aprobado!", type: "success" };
+                startPolicySelection(); // Iniciar la selección de políticas
+              } else {
+                notification.value = { message: "El Canciller ha sido rechazado.", type: "danger" };
+                resetTurn(); // Reiniciar el turno
+              }
+            }
+          }
+        );
+
+        return () => unsubscribe(); // Cancelar la suscripción al desmontar
+      } catch (error) {
+        console.error("Error al manejar el voto:", error);
+      }
+    };
+
+    const createTurn = async (numeroTurno, idPresidenteJugador) => {
+      try {
+        const turnoData = {
+          numero: numeroTurno,
+          id_presidente_jugador: idPresidenteJugador,
+          id_canciller_jugador: null,
+          resultado: null,
+          fecha_inicio: new Date().toISOString(),
+          fecha_fin: null,
+        };
+        await createSubCollection("partidas", props.codigoSala, "turnos", turnoData);
+      } catch (error) {
+        console.error("Error al crear el turno:", error);
+      }
+    };
+
+    const updatePolicyState = async (policyId, newState) => {
+      try {
+        await updateSubcollectionDocument(
+          "partidas",
+          props.codigoSala,
+          "politicas",
+          policyId,
+          { estado: newState }
+        );
+      } catch (error) {
+        console.error("Error al actualizar el estado de la política:", error);
+      }
+    };
+
+    return {
+      notification,
+      players,
+      showChancellorSelector,
+      fascistProgress,
+      liberalProgress,
+      electionTracker,
+      isGameOver,
+      politicas,
+      drawnPolicies,
+      showPolicyModal,
+      politicasParaCanciller,
+      handleFascistEffect,
+      drawPolicies,
+      enactPolicy,
+      resetGame,
+      handleChancellorSelected,
+      handlePresidentPolicySelection,
+      handleChancellorPolicySelection,
+      selectRandomPresident,
+      handleVote,
+      createTurn,
+      updatePolicyState,
+      numPlayers,
+      showFascistPower,
+    };
+  },
+};
 </script>
 
 <style scoped>
@@ -329,13 +550,15 @@ onMounted(() => {
   max-width: 80%;
 }
 
-.players-container, .decks-container {
+.players-container,
+.decks-container {
   background-color: white;
   border-radius: 8px;
   padding: 1rem;
 }
 
-.player-card, .deck-card {
+.player-card,
+.deck-card {
   background-color: white;
   border: 1px solid #ccc;
   border-radius: 6px;

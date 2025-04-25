@@ -39,6 +39,8 @@
       console.log('El mazo está vacío.')
     }
   }
+
+  
   </script>
   
   <style scoped>

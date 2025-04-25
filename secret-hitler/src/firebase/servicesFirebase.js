@@ -43,6 +43,97 @@ export const createNestedSubcollectionDocument = async (
   }
 };
 
+
+/**
+ * Crear una nueva partida con jugadores y configuraciones iniciales.
+ */
+export const createGame = async (codigoSala, idHostUsuario, jugadores) => {
+  try {
+    // Crear la partida
+    const partidaData = {
+      codigo_sala: codigoSala,
+      id_host_usuario: idHostUsuario,
+      estado: "pendiente",
+      turno_actual: 0,
+      ganador: null,
+    };
+    await createDocument("partidas", partidaData, codigoSala);
+
+    // Agregar jugadores a la subcolección "jugadores"
+    for (let i = 0; i < jugadores.length; i++) {
+      const jugadorData = {
+        id_usuario: jugadores[i].id_usuario,
+        id_partida: codigoSala,
+        nombre: jugadores[i].nombre,
+        rol: jugadores[i].rol,
+        orden_turno: i + 1,
+        esta_vivo: true,
+        conectado: true,
+      };
+      await createSubCollection("partidas", codigoSala, "jugadores", jugadorData, jugadores[i].id_jugador);
+    }
+
+    console.log("Partida creada con éxito.");
+  } catch (error) {
+    console.error("Error al crear la partida:", error);
+    throw error;
+  }
+};
+
+/**
+ * Crear un nuevo turno en una partida.
+ */
+export const createTurn = async (idPartida, numeroTurno, idPresidenteJugador) => {
+  try {
+    const turnoData = {
+      id_partida: idPartida,
+      numero: numeroTurno,
+      id_presidente_jugador: idPresidenteJugador,
+      id_canciller_jugador: null,
+      resultado: null,
+      fecha_inicio: new Date().toISOString(),
+      fecha_fin: null,
+    };
+    await createSubCollection("partidas", idPartida, "turnos", turnoData);
+    console.log("Turno creado con éxito.");
+  } catch (error) {
+    console.error("Error al crear el turno:", error);
+    throw error;
+  }
+};
+
+/**
+ * Inicializar las políticas en una partida.
+ */
+export const initializePolicies = async (idPartida) => {
+  try {
+    const politicas = [
+      ...Array(6).fill({ tipo_carta: "liberal", tipo_origen: "mazo" }),
+      ...Array(11).fill({ tipo_carta: "fascista", tipo_origen: "mazo" }),
+    ];
+
+    // Mezclar las políticas
+    const shuffledPolicies = politicas.sort(() => Math.random() - 0.5);
+
+    // Crear las políticas en la subcolección
+    for (let i = 0; i < shuffledPolicies.length; i++) {
+      const politicaData = {
+        ...shuffledPolicies[i],
+        estado: "mazo",
+        orden: i + 1,
+        id_turno: null,
+        id_partida: idPartida,
+      };
+      await createSubCollection("partidas", idPartida, "politicas", politicaData);
+    }
+
+    console.log("Políticas inicializadas con éxito.");
+  } catch (error) {
+    console.error("Error al inicializar las políticas:", error);
+    throw error;
+  }
+};
+
 /**
  * Leer todos los documentos de una subcolección anidada
  */
