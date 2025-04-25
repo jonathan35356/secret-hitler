@@ -11,12 +11,26 @@
       <!-- Fichas de políticas aprobadas -->
       <div v-for="i in maxPolicies" :key="`fascist-policy-${i}`">
         <img
+          v-if="i <= passedPolicies"
           :src="fascistPolicyImage"
           alt="Política fascista aprobada"
           class="position-absolute policy-token"
           :class="{ 'show': i <= passedPolicies, 'hide': i > passedPolicies }"
           :style="getPolicyTokenStyle(i)"
         />
+      </div>
+
+      <!-- Rastreador de elecciones -->
+      <div class="election-tracker position-absolute">
+          <img
+            v-for="pos in maxTrackerPositions"
+            :key="`tracker-${pos}`"
+            :src="electionTrackerImage"
+            :alt="`Rastreador en posición ${pos} de ${maxTrackerPositions}`"
+            class="position-absolute tracker-marker"
+            :class="{ 'd-none': pos !== trackerPosition }"
+            :style="{ left: getTrackerPosition(pos) }"
+          />
       </div>
     </div>
   </div>
@@ -34,14 +48,20 @@ export default {
       required: true,
       validator: value => value >= 0 && value <= 6,
       default: 0
-    }
+    },
+    trackerPosition: {
+      type: Number,
+      required: true,
+      validator: value => value >= 1 && value <=3,
+      default:1
+    },
   },
   data() {
     return {
       fascistBoardImage,
       fascistPolicyImage,
       maxPolicies: 6,
-      policyPositions: ['11%', '24.6%', '38.2%', '51.8%', '65.4%', '79%']
+      policyPositions: ['11%', '24.6%', '38.2%', '50.8%', '63.4%', '77%']
     }
   },
   methods: {
