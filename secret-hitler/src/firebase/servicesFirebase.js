@@ -15,6 +15,152 @@ import {
   writeBatch,
 } from "firebase/firestore";
 
+/**
+ * Crear un documento en una subcolección dentro de una subcolección
+ */
+export const createNestedSubcollectionDocument = async (
+  rootCollection,
+  rootDocId,
+  firstSubcollection,
+  firstSubDocId,
+  secondSubcollection,
+  data
+) => {
+  try {
+    const nestedDocRef = doc(
+      db,
+      rootCollection,
+      rootDocId,
+      firstSubcollection,
+      firstSubDocId,
+      secondSubcollection,
+      crypto.randomUUID()
+    );
+    await setDoc(nestedDocRef, data);
+    console.log("Documento creado en sub-subcolección.");
+  } catch (error) {
+    console.error("Error al crear en sub-subcolección:", error);
+  }
+};
+
+/**
+ * Leer todos los documentos de una subcolección anidada
+ */
+export const getNestedSubcollection = async (
+  rootCollection,
+  rootDocId,
+  firstSubcollection,
+  firstSubDocId,
+  secondSubcollection
+) => {
+  try {
+    const nestedSubRef = collection(
+      db,
+      rootCollection,
+      rootDocId,
+      firstSubcollection,
+      firstSubDocId,
+      secondSubcollection
+    );
+    const snapshot = await getDocs(nestedSubRef);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Error al leer sub-subcolección:", error);
+  }
+};
+
+/**
+ * Actualizar un documento específico en una subcolección anidada
+ */
+export const updateNestedSubcollectionDocument = async (
+  rootCollection,
+  rootDocId,
+  firstSubcollection,
+  firstSubDocId,
+  secondSubcollection,
+  secondSubDocId,
+  newData
+) => {
+  try {
+    const docRef = doc(
+      db,
+      rootCollection,
+      rootDocId,
+      firstSubcollection,
+      firstSubDocId,
+      secondSubcollection,
+      secondSubDocId
+    );
+    await updateDoc(docRef, newData);
+    console.log("Documento actualizado en sub-subcolección.");
+  } catch (error) {
+    console.error("Error al actualizar sub-subcolección:", error);
+  }
+};
+
+/**
+ * Eliminar un documento específico en una sub-subcolección
+ */
+export const deleteNestedSubcollectionDocument = async (
+  rootCollection,
+  rootDocId,
+  firstSubcollection,
+  firstSubDocId,
+  secondSubcollection,
+  secondSubDocId
+) => {
+  try {
+    const docRef = doc(
+      db,
+      rootCollection,
+      rootDocId,
+      firstSubcollection,
+      firstSubDocId,
+      secondSubcollection,
+      secondSubDocId
+    );
+    await deleteDoc(docRef);
+    console.log("Documento eliminado en sub-subcolección.");
+  } catch (error) {
+    console.error("Error al eliminar de sub-subcolección:", error);
+  }
+};
+
+/**
+ * Escuchar cambios en tiempo real en una sub-subcolección
+ */
+export const onSnapshotNestedSubcollection = (
+  rootCollection,
+  rootDocId,
+  firstSubcollection,
+  firstSubDocId,
+  secondSubcollection,
+  callback
+) => {
+  try {
+    const nestedSubRef = collection(
+      db,
+      rootCollection,
+      rootDocId,
+      firstSubcollection,
+      firstSubDocId,
+      secondSubcollection
+    );
+
+    const unsubscribe = onSnapshot(nestedSubRef, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      callback(data);
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error("Error al escuchar sub-subcolección:", error);
+  }
+};
+
 // Funciones CRUD para Firestore
 
 export const emptyCollection = async (nombreColeccion) => {

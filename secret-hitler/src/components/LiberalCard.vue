@@ -52,8 +52,8 @@
       trackerPosition: {
         type: Number,
         required: true,
-        validator: value => value >= 1 && value <= 3,
-        default: 1
+        validator: value => value >= 0 && value <= 3,
+        default: 0
       }
     },
     data() {
@@ -77,7 +77,7 @@
       },
       getTrackerPosition(pos) {
         const positions = ['20%', '40%', '60%']
-        return positions[pos - 1]
+        return positions[pos - 1] || '0%'
       }
     }
   }
