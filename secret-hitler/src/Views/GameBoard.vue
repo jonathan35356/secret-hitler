@@ -246,7 +246,7 @@ const checkWinConditions = () => {
     endGame('liberal')
   } else if (fascistProgress.value >= 6) {
     endGame('fascist')
-  } else if (fascistProgress.value >= 3 && currentPower.value === 'election') {
+  } else if (fascistProgress.value >= 6 && currentPower.value === 'election') {
     endGame('fascist')
   }
 }
