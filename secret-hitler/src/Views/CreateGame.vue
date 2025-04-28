@@ -9,7 +9,7 @@
 
       <h4 class="text-center mb-4">Lista de participantes</h4>
 
-      <!-- Solamente mostrar el nombre del jugador -->
+      <!-- Lista de jugadores -->
       <div class="list-group mb-4">
         <div
           v-for="(jugador, index) in participantes"
@@ -20,9 +20,18 @@
         </div>
       </div>
 
+      <!-- Botón para iniciar partida -->
       <button class="btn btn-primary w-100 mb-3" @click="iniciarPartida">Iniciar partida</button>
-      <router-link to="/home"><button class="btn btn-danger w-100">Volver</button></router-link>
 
+      <!-- Botón para unirse a una partida -->
+      <router-link to="/join-game">
+        <button class="btn btn-success w-100 mb-3">Unirse a una partida</button>
+      </router-link>
+
+      <!-- Botón para volver -->
+      <router-link to="/home">
+        <button class="btn btn-danger w-100">Volver</button>
+      </router-link>
     </div>
   </div>
 </template>
@@ -129,6 +138,12 @@ export default {
 
     const iniciarPartida = async () => {
       try {
+        // Verificar que haya al menos 5 jugadores
+        if (participantes.value.length < 5) {
+          Swal.fire("Error", "Se necesitan al menos 5 jugadores para iniciar la partida.", "error");
+          return;
+        }
+
         const jugadores = participantes.value.map((jugador, index) => ({
           id_usuario: jugador.idJugador,
           id_jugador: jugador.idJugador,
@@ -197,5 +212,15 @@ export default {
   box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.25);
   width: 100%;
   max-width: 400px;
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
 }
 </style>

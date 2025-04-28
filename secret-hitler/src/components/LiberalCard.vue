@@ -61,6 +61,7 @@ export default {
     return {
       liberalBoardImage,
       liberalPolicyImage,
+      electionTrackerImage,
       maxPolicies: 5,
       maxTrackerPositions: 3,
       policyPositions: ['19%', '31.6%', '44.2%', '56.8%', '69.4%']

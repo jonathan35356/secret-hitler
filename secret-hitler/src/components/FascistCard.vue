@@ -37,30 +37,36 @@
 </template>
 
 <script>
+import { ref } from 'vue';
 import fascistBoardImage from '../assets/board-fascist.png'
 import fascistPolicyImage from '../assets/policy-fascist.png'
+import electionTrackerImage from '../assets/election-tracker.png';
+
+const electionTracker = ref(1); // Cambiar el valor inicial a 1
 
 export default {
   name: 'FascistCard',
   props: {
+    trackerPosition: {
+      type: Number,
+      required: true,
+      validator: value => value >= 0 && value <= 3, // Permitir 0 como valor válido
+      default: 1
+    },
     passedPolicies: {
       type: Number,
       required: true,
       validator: value => value >= 0 && value <= 6,
       default: 0
     },
-    trackerPosition: {
-      type: Number,
-      required: true,
-      validator: value => value >= 1 && value <=3,
-      default:1
-    },
   },
   data() {
     return {
       fascistBoardImage,
       fascistPolicyImage,
+      electionTrackerImage, // Agregar esta línea
       maxPolicies: 6,
+      maxTrackerPositions: 3,
       policyPositions: ['11%', '24.6%', '38.2%', '50.8%', '63.4%', '77%']
     }
   },
@@ -73,8 +79,17 @@ export default {
         width: '12%',
         zIndex: 10,
         filter: 'drop-shadow(0 0 5px rgba(255, 0, 0, 0.7))'
-      }
+      };
+    },
+    getTrackerPosition(pos) {
+      const positions = ['20%', '40%', '60%']; // Ajusta las posiciones según el diseño
+      console.log('Posición calculada para trackerPosition:', pos, 'es', positions[pos - 1]);
+      return positions[pos - 1] || '0%';
     }
+  },
+  mounted() {
+    console.log('trackerPosition:', this.trackerPosition);
+    console.log('passedPolicies:', this.passedPolicies);
   }
 }
 </script>
