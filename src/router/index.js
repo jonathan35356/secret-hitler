@@ -16,7 +16,7 @@ const routes = [
     props: true,
   },
   { path: "/register", name: "register", component: Register },
-  { path: "/", name: "register", component: LandingPage },
+  { path: "/", name: "register", component: Register },
   { path: "/join-game", name: "join-game", component: JoinGame },
   { path: "/create-game", name: "create-game", component: CreateGame },
 ];
