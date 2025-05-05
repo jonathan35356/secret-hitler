@@ -43,7 +43,23 @@
       :players="players"
       :presidentId="currentPresident?.id"
       @chancellor-selected="handleChancellorSelected"
-    />
+    >
+      <template v-slot:default="{ players, presidentId }">
+        <div>
+          <h3>Selecciona un Canciller</h3>
+          <ul>
+            <li
+              v-for="player in players.filter(p => p.id !== presidentId)"
+              :key="player.id"
+            >
+              <button @click="$emit('chancellor-selected', player)">
+                {{ player.nombre }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </PresidentCansillerSelector>
 
     <!-- Tablero Liberal -->
     <div class="mb-4">
@@ -161,7 +177,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import PlayerContainer from "../components/PlayerContainer.vue";
 import DecksEndTermButton from "../components/DecksEndTermButton.vue";
 import PresidentCansillerSelector from "../components/PresidentCansillerSelector.vue";
@@ -191,8 +207,8 @@ export default {
     const drawnPolicies = ref([]);
     const showPolicyModal = ref(false);
     const politicasParaCanciller = ref([]);
-    const currentPresident = ref({ id: null, nombre: null }); // Valor inicial
-    const currentChancellor = ref(null); // Canciller actual
+    const currentPresident = ref({ id: null, nombre: null });
+    const currentChancellor = ref(null);
     const numPlayers = computed(() => players.value.length); // Número de jugadores
     const showFascistPower = ref(false); // Mostrar poderes fascistas
     const currentUser = ref(null);
@@ -217,14 +233,11 @@ export default {
               rol: jugador.rol,
               esta_vivo: jugador.esta_vivo,
               conectado: jugador.conectado,
-              imagen: jugador.imagen || 'ruta/por/defecto.jpg', // Imagen por defecto si no tiene una
+              imagen: jugador.imagen || '/public/image.png', // Imagen por defecto si no tiene una
             }));
 
-            // Solo actualiza el estado si los datos han cambiado
-            if (JSON.stringify(players.value) !== JSON.stringify(updatedPlayers)) {
-              players.value = updatedPlayers;
-              console.log("Jugadores actualizados desde la base de datos:", players.value);
-            }
+            players.value = updatedPlayers;
+            console.log("Jugadores actualizados desde la base de datos:", players.value);
           }
         );
 
@@ -234,13 +247,11 @@ export default {
             fascistProgress.value = partida.fascistProgress || 0;
             electionTracker.value = partida.electionTracker || 0;
 
-            // Actualizar el presidente actual desde Firestore
             if (partida.id_presidente) {
               const president = players.value.find(player => player.id === partida.id_presidente);
               currentPresident.value = president || { id: null, nombre: null }; // Valor por defecto si no se encuentra
             }
 
-            // Actualizar el canciller actual desde Firestore
             if (partida.id_canciller) {
               const chancellor = players.value.find(player => player.id === partida.id_canciller);
               currentChancellor.value = chancellor || null; // Valor por defecto si no se encuentra
@@ -620,43 +631,44 @@ export default {
     console.log('fascistProgress:', fascistProgress.value);
     console.log('electionTracker:', electionTracker.value);
 
+    watch(players, (newVal) => {
+      console.log("Lista de jugadores actualizada:", newVal);
+    });
+
     return {
-      notification,
-      players,
-      showChancellorSelector,
-      fascistProgress,
-      liberalProgress,
-      electionTracker,
-      isGameOver,
-      politicas,
-      drawnPolicies,
-      showPolicyModal,
-      politicasParaCanciller,
-      handleFascistEffect,
-      drawPolicies,
-      enactPolicy,
-      resetGame,
-      handleChancellorSelected,
-      handlePresidentPolicySelection,
-      handleChancellorPolicySelection,
-      selectRandomPresident,
-      handleVote,
-      createTurn,
-      updatePolicyState,
-      numPlayers,
-      showFascistPower,
-      assignRoles,
-      startGame,
-      currentUser,
-      gameStarted,
-    };
+    notification,
+    players,
+    showChancellorSelector,
+    fascistProgress,
+    liberalProgress,
+    electionTracker,
+    isGameOver,
+    politicas,
+    drawnPolicies,
+    showPolicyModal,
+    politicasParaCanciller,
+    currentPresident, 
+    currentChancellor, 
+    numPlayers,
+    showFascistPower,
+    currentUser,
+    handleFascistEffect,
+    drawPolicies,
+    enactPolicy,
+    resetGame,
+    handleChancellorSelected,
+    handlePresidentPolicySelection,
+    handleChancellorPolicySelection,
+    selectRandomPresident,
+  };
   },
 };
 </script>
 
 <style scoped>
 .game-container {
-  max-width: 800px;
+  max-width: 1400px; /* Ya está configurado en el template */
+  margin: 0 auto;
 }
 
 .policy-modal {
@@ -701,7 +713,7 @@ export default {
   display: flex;
   flex-wrap: wrap; /* Permite que los elementos se ajusten a la siguiente fila si no caben */
   justify-content: center; /* Centra los jugadores horizontalmente */
-  gap: 1rem; /* Espaciado entre los jugadores */
+  gap: 0.5rem; /* Espaciado entre las tarjetas */
 }
 
 .decks-container {
@@ -710,30 +722,30 @@ export default {
   padding: 1rem;
 }
 
-.player-card,
-.deck-card {
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-}
-
 .player-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100px; /* Reduce el ancho de las tarjetas */
+  padding: 0.5rem; /* Reduce el relleno interno */
   text-align: center;
-  border: 1px solid #ccc;
+  background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 1rem;
-  width: 120px; /* Tamaño fijo para las tarjetas */
 }
 
 .player-image {
-  width: 80px;
-  height: 80px;
+  width: 60px; /* Reduce el tamaño de la imagen */
+  height: 60px; /* Reduce el tamaño de la imagen */
   border-radius: 50%; /* Hace que la imagen sea circular */
   object-fit: cover; /* Ajusta la imagen para que no se deforme */
   margin-bottom: 0.5rem;
+}
+
+.player-name {
+  font-size: 0.8rem; /* Reduce el tamaño del texto */
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+.player-role {
+  font-size: 0.7rem; /* Reduce el tamaño del texto */
+  color: #666;
 }
 </style>

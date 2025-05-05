@@ -5,6 +5,7 @@ import Register from "../Views/Register.vue";
 import PresidentCansillerSelector from "../components/PresidentCansillerSelector.vue";
 import JoinGame from "../Views/JoinGame.vue";
 import CreateGame from "../Views/CreateGame.vue";
+import LandingPage from "../Views/LandingPage.vue";
 
 const routes = [
   { path: "/login", name: "login", component: Login },
@@ -15,6 +16,7 @@ const routes = [
     props: true,
   },
   { path: "/register", name: "register", component: Register },
+  { path: "/", name: "register", component: LandingPage },
   { path: "/join-game", name: "join-game", component: JoinGame },
   { path: "/create-game", name: "create-game", component: CreateGame },
 ];
